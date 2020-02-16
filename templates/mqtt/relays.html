@@ -1,5 +1,8 @@
 {% extends "layout.html" %}
 
+{% block css %}
+
+{% endblock %}
 {% block content %}
     <div class="row">
         <div class="d-flex flex-row">
@@ -40,58 +43,56 @@
         </div>
     </div>
     <div class="row">
-
         <div class="d-flex justify-self-center">
             <div class="d-flex flex-row card-group flex-wrap">
-                {% for relay in context.relays %}
+                {% for relay in context.relay_states.values() %}
                     <div class="d-flex card">
                         <div class="card-body">
                             <h3 class="card-title">
-                                Relay {{ relay }}
+                                Relay {{ relay.relay_id }}
                             </h3>
                             <input type="checkbox"
-                                   id="relay_toggle_{{ relay }}"
-                                   relay_id={{ relay }} class="relay-toggle"
-                                   checked data-toggle="toggle"
+                                   id="relay_toggle_{{ relay.relay_id }}"
+                                   relay_id="{{ relay.relay_id }}"
+                                   class="relay-toggle"
+{#                                   Toggle's state gets disabled if relay is closed #}
+                                   {% if relay.current_state == 0 %}
+                                       checked
+                                   {% endif %}
+                                   data-toggle="toggle"
                                    data-onstyle="success"
                                    data-offstyle="danger"
-                                    data-on="Enabled"
-                                    data-off="Disabled">
+                                   data-on="Enabled"
+                                   data-off="Disabled">
+                            {{ relay.current_state }}
                         </div>
                     </div>
                 {% endfor %}
+
             </div>
         </div>
     </div>
+    {% for relay in context.relay_states.values() %}
+
+    {% endfor %}
+
     <div class="row">
-        <h3>Jobs</h3>
+        <h3>Timing</h3>
     </div>
     <div class="row">
         <div class="card-group">
             <div class="d-flex card">
-                <ul id="open_time_container" class="list-group list-group-flush">
-
-                </ul>
+                {% include "mqtt/slider.html" %}
             </div>
         </div>
     </div>
-    <div class="row">
-        <h3>Relay States</h3>
-    </div>
-    <div class="row">
-        <div class="card-group">
-            <div class="d-flex card">
-                <ul id="relay_states_container" class="list-group list-group-flush">
 
-                </ul>
-            </div>
-        </div>
-    </div>
 
 
 {% endblock %}
 
 {% block js %}
+
     <script type="text/javascript" charset="utf-8">
         var socket = io();
         socket.on('connect', function() {
@@ -106,8 +107,7 @@
                obj = JSON.parse(relays_json[item]);
                relay_id = obj["relay_id"];
                relay_state = obj["current_state"];
-               $("#relay_toggle_" + relay_id).prop("checked", !relay_state).change();
-
+               // $("#relay_toggle_" + relay_id).prop("checked", !relay_state).change();
                console.log(relay_id, relay_state);
            }
 
@@ -141,7 +141,7 @@
     // An event handler for a change of value
         $('input.relay-toggle').on('change', function(event) {
             socket.emit('relay_state_change', {
-                who:$(this).attr('relay_id'),
+                relay_id:$(this).attr('relay_id'),
                 data: $(this).prop('checked')
              });
             console.log($(this).prop('checked'));
